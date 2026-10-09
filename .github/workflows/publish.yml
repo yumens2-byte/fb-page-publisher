@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────
+#  FB 페이지 게시 — 노션 회차 원장(승인 건) → 피드 + 릴스
+#
+#  ⚠️ cron 은 UTC 기준. "5 11 * * *" = KST 매일 20:05 (+ 랜덤 지연 0~40분)
+#     시각 변경 시 이 주석도 함께 수정.
+#
+#  DRY_RUN 결정 순서
+#    workflow_dispatch : inputs.dry_run ("true"/"false" 문자열 — boolean 이면 false 가 || 폴백에 덮임)
+#    schedule          : vars.FBDET_DRY_RUN → 미설정 시 'true' (안전 기본값)
+#    운영 개시 = Repository Variables 에 FBDET_DRY_RUN=false 등록
+# ─────────────────────────────────────────────────────────────
+name: fb-publish
+
+on:
+  schedule:
+    - cron: "5 11 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "dry_run (true=게시 차단·노션 쓰기 없음)"
+        type: choice
+        options: ["true", "false"]
+        default: "true"
+
+concurrency:
+  group: fb-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install ffmpeg (ffprobe)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+
+      - name: Random delay (schedule only)
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          DELAY=$((RANDOM % 2400))
+          echo "delay ${DELAY}s"
+          sleep "$DELAY"
+
+      - name: Publish
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run || vars.FBDET_DRY_RUN || 'true' }}
+          FBDET_PAGE_ID: ${{ secrets.FBDET_PAGE_ID }}
+          FBDET_PAGE_TOKEN: ${{ secrets.FBDET_PAGE_TOKEN }}
+          FBDET_NOTION_TOKEN: ${{ secrets.FBDET_NOTION_TOKEN }}
+          FBDET_NOTION_DB_ID: ${{ secrets.FBDET_NOTION_DB_ID }}
+          FBDET_TELEGRAM_BOT_TOKEN: ${{ secrets.FBDET_TELEGRAM_BOT_TOKEN }}
+          FBDET_TELEGRAM_CHAT_ID: ${{ secrets.FBDET_TELEGRAM_CHAT_ID }}
+          FBDET_PHOTO_AI_NOTICE: ${{ vars.FBDET_PHOTO_AI_NOTICE }}
+          FBDET_REEL_AI_FLAG: ${{ vars.FBDET_REEL_AI_FLAG || 'true' }}
+        run: |
+          echo "DRY_RUN=$DRY_RUN"
+          python -m fbpub.run_publish

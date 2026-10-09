@@ -1,0 +1,36 @@
+# ─────────────────────────────────────────────────────────────
+#  운영 점검 (게시 없음) — 토큰·권한·페이지 접근·노션 DB 스키마
+#  "17 0 * * 1" = KST 매주 월 09:17
+# ─────────────────────────────────────────────────────────────
+name: fb-preflight
+
+on:
+  schedule:
+    - cron: "17 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Preflight
+        env:
+          FBDET_PAGE_ID: ${{ secrets.FBDET_PAGE_ID }}
+          FBDET_PAGE_TOKEN: ${{ secrets.FBDET_PAGE_TOKEN }}
+          FBDET_APP_ID: ${{ secrets.FBDET_APP_ID }}
+          FBDET_APP_SECRET: ${{ secrets.FBDET_APP_SECRET }}
+          FBDET_NOTION_TOKEN: ${{ secrets.FBDET_NOTION_TOKEN }}
+          FBDET_NOTION_DB_ID: ${{ secrets.FBDET_NOTION_DB_ID }}
+          FBDET_TELEGRAM_BOT_TOKEN: ${{ secrets.FBDET_TELEGRAM_BOT_TOKEN }}
+          FBDET_TELEGRAM_CHAT_ID: ${{ secrets.FBDET_TELEGRAM_CHAT_ID }}
+        run: python -m fbpub.preflight
