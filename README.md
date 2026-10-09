@@ -1,7 +1,6 @@
 # fb-page-publisher
 
 노션 회차 원장(DB-05)에서 **마스터가 승인한 회차 1건**을 Facebook 페이지에 **피드(사진+본문) + 릴스(영상)** 로 게시하고, 결과를 원장에 기록한다.
-설계 문서: 노션 `DSN-FBDET-PUB-001` (사건파일 76 하위).
 
 | 항목 | 값 |
 |---|---|
@@ -58,10 +57,10 @@ fbpub/
 |---|---|---|
 | `FBDET_PAGE_ID` | ✔ | Facebook 페이지 ID |
 | `FBDET_PAGE_TOKEN` | ✔ | 장기 페이지 액세스 토큰 |
-| `FBDET_NOTION_TOKEN` | ✔ | **전용** 노션 통합 토큰 (사건파일 76 영역에만 연결) |
+| `FBDET_NOTION_TOKEN` | ✔ | **전용** 노션 통합 토큰 (원장 DB 가 있는 영역에만 연결) |
 | `FBDET_NOTION_DB_ID` | ✔ | DB-05 데이터베이스 ID |
 | `FBDET_APP_ID` / `FBDET_APP_SECRET` | 선택 | preflight 의 debug_token 점검 |
-| `FBDET_TELEGRAM_BOT_TOKEN` / `FBDET_TELEGRAM_CHAT_ID` | 선택 | 결과 알림 (전용 대화방. 투자 채널 ID 재사용 금지) |
+| `FBDET_TELEGRAM_BOT_TOKEN` / `FBDET_TELEGRAM_CHAT_ID` | 선택 | 결과 알림 (전용 대화방. 다른 용도의 채널 ID 재사용 금지) |
 
 ### GitHub Variables
 
@@ -71,7 +70,7 @@ fbpub/
 | `FBDET_REEL_AI_FLAG` | true | 릴스 finish 요청에 `is_ai_generated=true` 포함 |
 | `FBDET_PHOTO_AI_NOTICE` | (없음) | 값이 있으면 피드 캡션 끝에 덧붙임 (예: AI 생성 이미지 표기) |
 
-### Meta 준비 (REQ-FBDET-001 §14)
+### Meta 준비
 
 1. Meta 앱 생성 (기존 앱과 분리), 앱 역할에 본인 계정
 2. 권한: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts` (+ 페이지 CREATE_CONTENT 작업 권한)

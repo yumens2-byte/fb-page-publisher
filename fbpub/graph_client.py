@@ -12,7 +12,7 @@ Facebook Graph API — 페이지 사진 게시 / 릴스 게시 / 릴스 상태 �
            GET  /{video-id}?fields=status
            (Reels publishing 가이드, page/video_reels 레퍼런스: is_ai_generated)
 
-운영 원칙 (investment-os FB-1 정책 준용)
+운영 원칙
   - 쓰기 요청은 재시도하지 않는다 (중복 게시 방지). 읽기(status)만 폴링.
   - status
       ok       : 게시 확정

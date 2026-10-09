@@ -3,7 +3,7 @@ fbpub/settings.py
 =================
 환경변수 → 상수. 모든 설정값은 이 파일에서만 읽는다.
 
-접두어: FBDET_ (REQ-FBDET-001 D-11 예시값). 다른 페이지 키(FACE_ 등)와 공유하지 않는다.
+접두어: FBDET_. 다른 프로젝트의 키와 공유하지 않는다.
 """
 from __future__ import annotations
 
@@ -126,6 +126,6 @@ S_CHECK = "확인필요"
 STATE_OPTIONS = (S_DRAFT, S_REVIEW, S_APPROVED, S_RUNNING, S_DONE, S_PARTIAL, S_FAILED, S_CHECK)
 
 # ── 알림 (선택) ───────────────────────────────────────────
-# 전용 대상만. 투자 채널 등 다른 채널 ID 재사용 금지.
+# 전용 대상만. 다른 용도의 채널 ID 재사용 금지.
 TELEGRAM_BOT_TOKEN = _env("FBDET_TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = _env("FBDET_TELEGRAM_CHAT_ID")

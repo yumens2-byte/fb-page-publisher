@@ -1,7 +1,7 @@
 """
 fbpub/redact.py
 ===============
-로그·결과 문자열에서 토큰·식별자를 가린다. (investment-os facebook_publisher._redact 패턴 준용 + 페이지/노션 ID)
+로그·결과 문자열에서 토큰·식별자를 가린다. (access_token·EAA 토큰·노션 토큰 패턴 + 페이지/노션 ID)
 """
 from __future__ import annotations
 
