@@ -6,6 +6,20 @@
       "url": "/databases/db000000000000000000000000000001/query",
       "payload": {
         "filter": {
+          "property": "게시상태",
+          "select": {
+            "equals": "발행중"
+          }
+        },
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
           "and": [
             {
               "property": "게시상태",
@@ -59,13 +73,13 @@
     },
     {
       "method": "GET",
-      "url": "/pages/page-1/properties/p04",
+      "url": "/pages/page-1/properties/%3Ap04",
       "payload": null,
       "status": null
     },
     {
       "method": "GET",
-      "url": "/pages/page-1/properties/p04?start_cursor=c2",
+      "url": "/pages/page-1/properties/%3Ap04?start_cursor=c2",
       "payload": null,
       "status": null
     },
@@ -77,13 +91,13 @@
     },
     {
       "method": "GET",
-      "url": "/pages/page-1/properties/p05",
+      "url": "/pages/page-1/properties/%3Ap05",
       "payload": null,
       "status": null
     },
     {
       "method": "GET",
-      "url": "/pages/page-1/properties/p05?start_cursor=c2",
+      "url": "/pages/page-1/properties/%3Ap05?start_cursor=c2",
       "payload": null,
       "status": null
     },

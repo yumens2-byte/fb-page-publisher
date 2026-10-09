@@ -29,6 +29,12 @@ FEED_OK = (
 REEL_OK = "테스트 요약 두 줄.\n💬 테스트 질문?\n※ 여러 사례를 재구성한 픽션입니다."
 
 
+@pytest.fixture(autouse=True)
+def _no_retry_sleep(monkeypatch):
+    from fbpub import notion_repo
+    monkeypatch.setattr(notion_repo, "_sleep", lambda s: None)
+
+
 @pytest.fixture
 def live(monkeypatch):
     monkeypatch.setattr(settings, "DRY_RUN", False)

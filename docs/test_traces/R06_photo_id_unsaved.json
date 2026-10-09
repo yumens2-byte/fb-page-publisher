@@ -215,6 +215,14 @@
       "status": null
     },
     {
+      "method": "GET",
+      "url": "/vid1",
+      "payload": {
+        "fields": "status"
+      },
+      "status": null
+    },
+    {
       "method": "PATCH",
       "url": "/pages/page-1",
       "payload": {
@@ -229,7 +237,7 @@
               {
                 "type": "text",
                 "text": {
-                  "content": "photo=ok; reel=unknown/finish:request_error:ReadTimeout"
+                  "content": "photo=ok; reel=ok; photo_id_unsaved=1234567890123_ph1"
                 }
               }
             ]
@@ -247,10 +255,10 @@
   "final_rows": {
     "page-1": {
       "게시상태": "확인필요",
-      "FB피드ID": "1234567890123_ph1",
+      "FB피드ID": "",
       "FB릴스ID": "vid1",
       "발행일시": "2026-10-09T20:30:00+09:00",
-      "결과코드": "photo=ok; reel=unknown/finish:request_error:ReadTimeout"
+      "결과코드": "photo=ok; reel=ok; photo_id_unsaved=1234567890123_ph1"
     }
   }
 }

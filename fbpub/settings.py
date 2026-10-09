@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 def _env(name: str, default: str = "") -> str:
@@ -21,8 +21,21 @@ def _env_bool(name: str, default: str) -> bool:
 
 
 # ── 운영 모드 ─────────────────────────────────────────────
-# 기본 true. 실게시는 명시적으로 "false" 일 때만 (investment-os 규약 준용).
-DRY_RUN = _env_bool("DRY_RUN", "true")
+# "true"/빈 값 → DRY_RUN, "false" → 실게시, 그 외 값(오타·"1" 등) → 설정 오류로 실행 중단 (v1.1.0, 검토 M1)
+
+
+def parse_dry_run(raw: str) -> bool | None:
+    value = (raw or "").strip().lower()
+    if value in ("", "true"):
+        return True
+    if value == "false":
+        return False
+    return None
+
+
+_DRY_RUN_PARSED = parse_dry_run(os.getenv("DRY_RUN", ""))
+DRY_RUN_INVALID = _DRY_RUN_PARSED is None
+DRY_RUN = True if _DRY_RUN_PARSED is None else _DRY_RUN_PARSED
 LOG_LEVEL = _env("LOG_LEVEL", "INFO")
 
 # ── Facebook Graph API ───────────────────────────────────

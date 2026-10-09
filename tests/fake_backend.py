@@ -15,7 +15,8 @@ from conftest import DB_ID, NOTION_TOKEN, PAGE, TOKEN
 
 from fbpub import settings
 
-PROP_IDS = {name: f"p{i:02d}" for i, name in enumerate(settings.REQUIRED_PROPERTIES)}
+# 실제 노션처럼 URL 인코딩된 속성 ID (예: "%3Ap04"). 코드가 재인코딩하면 경로가 맞지 않아 테스트가 실패한다.
+PROP_IDS = {name: f"%3Ap{i:02d}" for i, name in enumerate(settings.REQUIRED_PROPERTIES)}
 
 
 def _mask(obj):
@@ -81,6 +82,8 @@ class FakeBackend:
                                         "processing_phase": {"status": "complete"},
                                         "uploading_phase": {"status": "complete"}, "video_status": "ready"}}]
         self.notion_fail = False
+        self.notion_errors: list[int] = []  # 순서대로 반환할 일시 오류 상태코드 (429 등)
+        self.patch_fail_props: set[str] = set()  # 이 속성을 PATCH 하면 400
         self.on_patch = None  # 경쟁 상황 시뮬레이션용 훅
         self.video_seq = 0
 
@@ -99,7 +102,10 @@ class FakeBackend:
         if "rich_text" in cond:
             return bool("".join(x["plain_text"] for x in prop["rich_text"]))
         if "date" in cond:
-            return bool(prop.get("date"))
+            d = prop.get("date")
+            if "on_or_after" in cond["date"]:
+                return bool(d) and d["start"][:10] >= cond["date"]["on_or_after"]
+            return bool(d)
         raise AssertionError(cond)
 
     def notion(self, method, url, headers=None, json=None, timeout=None):  # noqa: A002
@@ -109,11 +115,21 @@ class FakeBackend:
         self.log(method, path, json)
         if self.notion_fail:
             return _resp(503, {"object": "error", "code": "service_unavailable", "message": "down"})
+        if self.notion_errors:
+            code = self.notion_errors.pop(0)
+            r = _resp(code, {"object": "error", "code": "rate_limited", "message": "slow down"})
+            r.headers = {"Retry-After": "1"}
+            return r
         if method == "POST" and path == f"/databases/{DB_ID}/query":
-            conds = json["filter"]["and"]
+            flt = json["filter"]
+            conds = flt["and"] if "and" in flt else [flt]
             hits = [copy.deepcopy(p) for p in self.pages.values() if all(self._match(p, c) for c in conds)]
             hits.sort(key=lambda p: p["properties"][settings.P_NO]["number"])
-            return _resp(200, {"results": hits, "has_more": False})
+            size = json.get("page_size", 100)
+            start = int(json.get("start_cursor") or 0)
+            chunk = hits[start:start + size]
+            more = start + size < len(hits)
+            return _resp(200, {"results": chunk, "has_more": more, "next_cursor": str(start + size) if more else None})
         if method == "GET" and path == f"/databases/{DB_ID}":
             return _resp(200, {"properties": {
                 n: {"id": PROP_IDS[n], "type": t, **({"select": {"options": [{"name": s} for s in settings.STATE_OPTIONS]}}
@@ -134,6 +150,8 @@ class FakeBackend:
         if m and method == "GET":
             return _resp(200, copy.deepcopy(self.pages[m.group(1)]))
         if m and method == "PATCH":
+            if set(json["properties"]) & self.patch_fail_props:
+                return _resp(400, {"object": "error", "code": "validation_error", "message": "rejected"})
             page = self.pages[m.group(1)]
             for name, val in json["properties"].items():
                 prop = page["properties"][name]

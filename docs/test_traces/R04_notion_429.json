@@ -1,6 +1,34 @@
 {
-  "exit_code": 2,
+  "exit_code": 0,
   "trace": [
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "property": "게시상태",
+          "select": {
+            "equals": "발행중"
+          }
+        },
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "property": "게시상태",
+          "select": {
+            "equals": "발행중"
+          }
+        },
+        "page_size": 20
+      },
+      "status": null
+    },
     {
       "method": "POST",
       "url": "/databases/db000000000000000000000000000001/query",
@@ -215,13 +243,21 @@
       "status": null
     },
     {
+      "method": "GET",
+      "url": "/vid1",
+      "payload": {
+        "fields": "status"
+      },
+      "status": null
+    },
+    {
       "method": "PATCH",
       "url": "/pages/page-1",
       "payload": {
         "properties": {
           "게시상태": {
             "select": {
-              "name": "확인필요"
+              "name": "발행완료"
             }
           },
           "결과코드": {
@@ -229,7 +265,7 @@
               {
                 "type": "text",
                 "text": {
-                  "content": "photo=ok; reel=unknown/finish:request_error:ReadTimeout"
+                  "content": "photo=ok; reel=ok"
                 }
               }
             ]
@@ -246,11 +282,11 @@
   ],
   "final_rows": {
     "page-1": {
-      "게시상태": "확인필요",
+      "게시상태": "발행완료",
       "FB피드ID": "1234567890123_ph1",
       "FB릴스ID": "vid1",
       "발행일시": "2026-10-09T20:30:00+09:00",
-      "결과코드": "photo=ok; reel=unknown/finish:request_error:ReadTimeout"
+      "결과코드": "photo=ok; reel=ok"
     }
   }
 }

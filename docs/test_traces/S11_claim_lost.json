@@ -6,6 +6,20 @@
       "url": "/databases/db000000000000000000000000000001/query",
       "payload": {
         "filter": {
+          "property": "게시상태",
+          "select": {
+            "equals": "발행중"
+          }
+        },
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
           "and": [
             {
               "property": "게시상태",

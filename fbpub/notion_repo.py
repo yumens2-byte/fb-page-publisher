@@ -10,12 +10,20 @@ Notion API (Notion-Version 2022-06-28)
   - GET   /v1/pages/{id}/properties/{property_id}   (rich_text 전체 조회, 페이지네이션)
   - PATCH /v1/pages/{id}
   - 파일 URL 은 "valid for one hour" → 조회 직후 다운로드한다.
+  - 속성 ID 는 응답에 URL 인코딩된 상태로 온다 → "Pass the returned ID as-is ... Don't encode it a second time."
+    (developers.notion.com/reference/page-property-values)
+v1.1.0 (2026-10-09 검토 반영)
+  - H1 속성 ID 이중 인코딩 제거
+  - M3 조회 페이지네이션 (find_ready, 릴스 일일 상한 집계) + 상한 집계 날짜 필터
+  - M4 429·5xx·연결 오류 재시도 (최대 3회, Retry-After 준수) — 노션 호출은 전부 멱등(조회/동일값 갱신)
+  - 발행중 잔류 행 조회 (find_stuck)
 """
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
@@ -24,11 +32,14 @@ import requests
 from fbpub import settings
 from fbpub.redact import redact
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 logger = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
 _RICH_TEXT_CHUNK = 1900  # rich_text 객체당 2000자 제한 여유
+RETRY_MAX = 3
+RETRY_STATUSES = (429, 500, 502, 503, 504)
+_sleep = time.sleep  # 테스트에서 교체
 
 
 class NotionError(RuntimeError):
@@ -62,17 +73,36 @@ def _headers() -> dict:
     }
 
 
-def _request(method: str, path: str, json_body: dict | None = None) -> dict:
+def _retry_wait(resp, attempt: int) -> float:
     try:
-        resp = requests.request(
-            method,
-            f"{settings.NOTION_BASE}{path}",
-            headers=_headers(),
-            json=json_body,
-            timeout=settings.HTTP_TIMEOUT_SEC,
-        )
-    except requests.exceptions.RequestException as e:
-        raise NotionError(f"{method} request_error:{type(e).__name__}:{redact(e)[:120]}") from None
+        return min(float(resp.headers.get("Retry-After", "")), 30.0)
+    except (AttributeError, TypeError, ValueError):
+        return float(2 ** attempt)
+
+
+def _request(method: str, path: str, json_body: dict | None = None) -> dict:
+    """노션 호출. 429·5xx·연결 오류는 최대 RETRY_MAX 회 재시도 (조회 또는 동일값 갱신이라 멱등)."""
+    resp = None
+    for attempt in range(RETRY_MAX + 1):
+        try:
+            resp = requests.request(
+                method,
+                f"{settings.NOTION_BASE}{path}",
+                headers=_headers(),
+                json=json_body,
+                timeout=settings.HTTP_TIMEOUT_SEC,
+            )
+        except requests.exceptions.RequestException as e:
+            if attempt < RETRY_MAX:
+                logger.warning(f"[Notion] {method} {type(e).__name__} — 재시도 {attempt + 1}/{RETRY_MAX}")
+                _sleep(float(2 ** attempt))
+                continue
+            raise NotionError(f"{method} request_error:{type(e).__name__}:{redact(e)[:120]}") from None
+        if resp.status_code in RETRY_STATUSES and attempt < RETRY_MAX:
+            logger.warning(f"[Notion] {method} http_{resp.status_code} — 재시도 {attempt + 1}/{RETRY_MAX}")
+            _sleep(_retry_wait(resp, attempt))
+            continue
+        break
     if resp.status_code != 200:
         try:
             err = resp.json()
@@ -155,28 +185,48 @@ def find_ready(now: datetime | None = None) -> Episode | None:
         "sorts": [{"property": settings.P_NO, "direction": "ascending"}],
         "page_size": 20,
     }
-    data = _request("POST", f"/databases/{settings.NOTION_DB_ID}/query", body)
-    for page in data.get("results", []):
+    for page in _query_all(body):
         ep = parse_episode(page)
         if ep.schedule_at is None or ep.schedule_at <= current:
             return ep
     return None
 
 
+def _query_all(body: dict, max_pages: int = 20):
+    """DB query 페이지네이션 (has_more / next_cursor)."""
+    cursor = None
+    for _ in range(max_pages):
+        payload = dict(body)
+        if cursor:
+            payload["start_cursor"] = cursor
+        data = _request("POST", f"/databases/{settings.NOTION_DB_ID}/query", payload)
+        yield from data.get("results", [])
+        cursor = data.get("next_cursor")
+        if not data.get("has_more") or not cursor:
+            return
+
+
+def find_stuck() -> list[Episode]:
+    """게시상태=발행중 으로 남은 행 (이전 실행 중단 등). 자동 처리하지 않고 알림만 한다."""
+    body = {"filter": {"property": settings.P_STATE, "select": {"equals": settings.S_RUNNING}}, "page_size": 20}
+    return [parse_episode(p) for p in _query_all(body, max_pages=1)]
+
+
 def count_reels_published_on(day_kst: str) -> int:
     """KST 날짜(YYYY-MM-DD)에 발행일시가 있고 FB릴스ID 가 채워진 행 수."""
+    # 날짜 필터는 시간대 해석 차이를 피하려고 하루 앞에서 자르고, KST 날짜 일치는 코드에서 판정한다
+    since = (datetime.fromisoformat(day_kst) - timedelta(days=1)).date().isoformat()
     body = {
         "filter": {
             "and": [
                 {"property": settings.P_REEL_ID, "rich_text": {"is_not_empty": True}},
-                {"property": settings.P_PUBLISHED_AT, "date": {"is_not_empty": True}},
+                {"property": settings.P_PUBLISHED_AT, "date": {"on_or_after": since}},
             ]
         },
         "page_size": 100,
     }
-    data = _request("POST", f"/databases/{settings.NOTION_DB_ID}/query", body)
     count = 0
-    for page in data.get("results", []):
+    for page in _query_all(body):
         value = (page.get("properties", {}).get(settings.P_PUBLISHED_AT) or {}).get("date")
         dt = _parse_date(value)
         if dt and dt.astimezone(KST).date().isoformat() == day_kst:
@@ -192,7 +242,7 @@ def get_text(ep: Episode, prop_name: str) -> str:
     parts: list[str] = []
     cursor = None
     while True:
-        path = f"/pages/{ep.page_id}/properties/{quote(prop_id, safe='')}"
+        path = f"/pages/{ep.page_id}/properties/{prop_id}"  # 응답의 ID 를 그대로 사용 (재인코딩 금지)
         if cursor:
             path += f"?start_cursor={quote(cursor, safe='')}"
         data = _request("GET", path)
@@ -242,7 +292,7 @@ def save_object_id(ep: Episode, kind: str, object_id: str) -> None:
 def finalize(ep: Episode, state: str, result_text: str, published_at: datetime | None) -> None:
     props: dict = {
         settings.P_STATE: {"select": {"name": state}},
-        settings.P_RESULT: _rich(redact(result_text)[:1900]),
+        settings.P_RESULT: _rich(redact(result_text, include_ids=False)[:1900]),
     }
     if published_at is not None:
         props[settings.P_PUBLISHED_AT] = {"date": {"start": published_at.astimezone(KST).isoformat()}}

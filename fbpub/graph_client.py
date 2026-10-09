@@ -20,6 +20,7 @@ Facebook Graph API — 페이지 사진 게시 / 릴스 게시 / 릴스 상태 �
       unknown  : 요청 전송 후 결과 미확정 (읽기 타임아웃, 연결 끊김, 5xx, 폴링 시간 초과)
       dry_run  : DRY_RUN — 요청 없음
   - 예외를 밖으로 던지지 않는다. 토큰·ID 는 결과·로그에 남기지 않는다.
+v1.1.0 (2026-10-09 검토 반영): 상태 폴링이 마감 시각을 넘지 않도록 요청 타임아웃을 남은 시간으로 제한 (M2)
 """
 from __future__ import annotations
 
@@ -33,7 +34,7 @@ import requests
 from fbpub import settings
 from fbpub.redact import redact
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 logger = logging.getLogger(__name__)
 
@@ -159,13 +160,13 @@ def post_photo(image_path: str, caption: str) -> dict:
 
 
 # ── 릴스 ──────────────────────────────────────────────────
-def get_reel_status(video_id: str) -> dict:
+def get_reel_status(video_id: str, timeout: float | None = None) -> dict:
     """읽기 요청. 반환: {"ok": bool, "status": {...} | None, "reason": str}"""
     try:
         resp = requests.get(
             f"{settings.GRAPH_BASE}/{video_id}",
             params={"fields": "status", "access_token": settings.PAGE_TOKEN},
-            timeout=settings.HTTP_TIMEOUT_SEC,
+            timeout=timeout if timeout is not None else settings.HTTP_TIMEOUT_SEC,
         )
     except requests.exceptions.RequestException as e:
         return {"ok": False, "status": None, "reason": f"status_request_error:{type(e).__name__}:{redact(e)[:80]}"}
@@ -199,7 +200,8 @@ def wait_reel_published(
     deadline = clock() + settings.REEL_POLL_MAX_SEC
     last_reason = ""
     while True:
-        st = get_reel_status(video_id)
+        remaining = max(deadline - clock(), 1.0)
+        st = get_reel_status(video_id, timeout=min(float(settings.HTTP_TIMEOUT_SEC), remaining))
         if st["ok"]:
             verdict = interpret_reel_status(st["status"])
             if verdict == "published":
@@ -214,7 +216,7 @@ def wait_reel_published(
         if clock() >= deadline:
             logger.error(f"[Graph] reel 상태 확인 시간 초과 — 확인 필요 ({last_reason})")
             return result("unknown", kind, object_id=video_id, reason=f"status:timeout:{last_reason}")
-        sleep(settings.REEL_POLL_INTERVAL_SEC)
+        sleep(min(float(settings.REEL_POLL_INTERVAL_SEC), max(deadline - clock(), 0.0)))
 
 
 def post_reel(
