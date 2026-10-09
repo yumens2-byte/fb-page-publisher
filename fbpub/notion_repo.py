@@ -18,6 +18,7 @@ v1.1.0 (2026-10-09 검토 반영)
   - M4 429·5xx·연결 오류 재시도 (최대 3회, Retry-After 준수) — 노션 호출은 전부 멱등(조회/동일값 갱신)
   - 발행중 잔류 행 조회 (find_stuck)
 v1.2.0 (2026-10-09 운영테스트 반영): 오류 메시지 본문(통합 이름·DB ID 포함) 미기록, 오류 코드만 남김
+v1.3.0 (2026-10-09): 릴스생략 체크 칸 파싱 (Episode.reel_skip)
 """
 from __future__ import annotations
 
@@ -33,7 +34,7 @@ import requests
 from fbpub import settings
 from fbpub.redact import redact
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 logger = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
@@ -56,6 +57,7 @@ class Episode:
     schedule_at: datetime | None
     feed_id: str
     reel_id: str
+    reel_skip: bool = False
     feed_files: list[dict] = field(default_factory=list)
     reel_files: list[dict] = field(default_factory=list)
     prop_ids: dict[str, str] = field(default_factory=dict)
@@ -152,6 +154,7 @@ def parse_episode(page: dict) -> Episode:
         schedule_at=_parse_date(p(settings.P_SCHEDULE).get("date")),
         feed_id=_plain(p(settings.P_FEED_ID).get("rich_text")).strip(),
         reel_id=_plain(p(settings.P_REEL_ID).get("rich_text")).strip(),
+        reel_skip=bool(p(settings.P_REEL_SKIP).get("checkbox")),
         feed_files=list(p(settings.P_FEED_IMAGE).get("files") or []),
         reel_files=list(p(settings.P_REEL_VIDEO).get("files") or []),
         prop_ids={name: str(v.get("id", "")) for name, v in props.items()},

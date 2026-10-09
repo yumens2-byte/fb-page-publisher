@@ -46,7 +46,8 @@ def rich(text: str) -> dict:
 
 def make_row(page_id: str, number: int, state: str, reviewed: bool = True, feed_text: str = "", reel_text: str = "",
              feed_url: str = "https://files.invalid/feed", reel_url: str = "https://files.invalid/reel",
-             schedule: str | None = None, feed_id: str = "", reel_id: str = "", published_at: str | None = None) -> dict:
+             schedule: str | None = None, feed_id: str = "", reel_id: str = "", published_at: str | None = None,
+             reel_skip: bool = False) -> dict:
     def files(url):
         return {"files": [{"name": "f", "type": "file", "file": {"url": url, "expiry_time": "2099-01-01T00:00:00Z"}}]
                 if url else []}
@@ -65,6 +66,7 @@ def make_row(page_id: str, number: int, state: str, reviewed: bool = True, feed_
         settings.P_REEL_ID: rich(reel_id),
         settings.P_PUBLISHED_AT: {"date": {"start": published_at} if published_at else None},
         settings.P_RESULT: rich(""),
+        settings.P_REEL_SKIP: {"checkbox": reel_skip},
     }
     for name, v in props.items():
         v["id"] = PROP_IDS[name]

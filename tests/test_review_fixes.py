@@ -197,3 +197,56 @@ def test_v120_notion_error_message_not_logged(live, monkeypatch, files, caplog):
     assert "11111111-2222" not in caplog.text and "Some-Integration" not in caplog.text
     assert "http_404:object_not_found" in caplog.text
     assert redact("id 11111111222233334444555555555555 / 11111111-2222-3333-4444-555555555555") == "id *** / ***"
+
+
+# v1.3.0 — 릴스생략: 이미지만 게시
+def test_v130_reel_skip_posts_feed_only(live, monkeypatch, media_dir):
+    files = {"https://files.invalid/feed": (media_dir / "ok.png").read_bytes()}
+    be = _setup(monkeypatch, [_row(reel_skip=True, reel_url="")], files)
+    assert _run(be, "R10_reel_skip_feed_only") == 0
+    s = _summary(be.pages["page-1"])
+    assert s["게시상태"] == settings.S_DONE and s["FB피드ID"] and s["FB릴스ID"] == ""
+    assert s["결과코드"] == "photo=ok; reel=omitted/reel_skip"
+    assert not [t for t in be.trace if "video_reels" in t["url"] or "rupload" in t["url"]]
+
+
+def test_v130_reel_skip_photo_failure_is_failed(live, monkeypatch, media_dir):
+    files = {"https://files.invalid/feed": (media_dir / "ok.png").read_bytes()}
+    be = _setup(monkeypatch, [_row(reel_skip=True, reel_url="")], files)
+    be.graph_post_override["photos"] = [_resp(400, {"error": {"code": 190, "message": "expired"}})]
+    assert _run(be, "R11_reel_skip_photo_fail") == 2
+    assert _summary(be.pages["page-1"])["게시상태"] == settings.S_FAILED
+
+
+def test_v130_reel_skip_photo_unknown_needs_check(live, monkeypatch, media_dir):
+    files = {"https://files.invalid/feed": (media_dir / "ok.png").read_bytes()}
+    be = _setup(monkeypatch, [_row(reel_skip=True, reel_url="")], files)
+    be.graph_post_override["photos"] = [requests.exceptions.ReadTimeout("t")]
+    assert _run(be, "R12_reel_skip_photo_unknown") == 2
+    assert _summary(be.pages["page-1"])["게시상태"] == settings.S_CHECK
+
+
+def test_v130_without_skip_missing_video_still_blocks(live, monkeypatch, media_dir):
+    files = {"https://files.invalid/feed": (media_dir / "ok.png").read_bytes()}
+    be = _setup(monkeypatch, [_row(reel_url="")], files)
+    assert _run(be, "R13_no_skip_no_video") == 2
+    s = _summary(be.pages["page-1"])
+    assert s["게시상태"] == settings.S_FAILED and "video:count:0" in s["결과코드"]
+    assert not [t for t in be.trace if t["url"].endswith("/photos")]
+
+
+def test_v130_reel_skip_dry_run(dry, monkeypatch, media_dir):
+    files = {"https://files.invalid/feed": (media_dir / "ok.png").read_bytes()}
+    be = _setup(monkeypatch, [_row(reel_skip=True, reel_url="")], files)
+    assert _run(be, "R14_reel_skip_dry_run") == 0
+    assert not [t for t in be.trace if t["method"] == "PATCH"]
+
+
+@pytest.mark.parametrize("results,expected", [
+    ({"photo": {"status": "ok"}, "reel": {"status": "omitted"}}, settings.S_DONE),
+    ({"photo": {"status": "failed"}, "reel": {"status": "omitted"}}, settings.S_FAILED),
+    ({"photo": {"status": "unknown"}, "reel": {"status": "omitted"}}, settings.S_CHECK),
+    ({"photo": {"status": "already"}, "reel": {"status": "omitted"}}, settings.S_DONE),
+])
+def test_v130_decide_state_omitted(results, expected):
+    assert run_publish.decide_state(results) == expected

@@ -23,6 +23,7 @@ v1.1.0 (2026-10-09 검토 반영)
   - L3 응답 미확정(unknown) 도 발행일시 기록 → 릴스 일일 상한 집계에 포함
   - L7 urllib3 로그 레벨 WARNING 고정 (DEBUG 시 쿼리 문자열 토큰 노출 방지)
   - L8 예외 traceback 마스킹 후 출력
+v1.3.0 (2026-10-09): 원장 '릴스생략' 체크 시 피드(이미지)만 게시 — 영상 검사·릴스 게시 생략, 피드 성공 시 발행완료
 """
 from __future__ import annotations
 
@@ -40,7 +41,7 @@ from fbpub import content_guard, graph_client, media_check, notify, notion_repo,
 from fbpub.notion_repo import KST, Episode, NotionError
 from fbpub.redact import redact
 
-VERSION = "1.1.0"
+VERSION = "1.3.0"
 
 logger = logging.getLogger("fbpub.run")
 
@@ -57,7 +58,10 @@ def decide_state(results: dict[str, dict], id_unsaved: bool = False) -> str:
     """채널별 결과 → 게시상태. results 는 이번 실행에서 처리한 채널만 포함."""
     if id_unsaved:
         return settings.S_CHECK  # 게시는 됐지만 원장에 ID 가 없다 → 재게시 방지
-    values = {v["status"] for v in results.values()}
+    # omitted = 릴스생략 체크로 요청되지 않은 채널 → 판정에서 제외 (v1.3.0)
+    values = {v["status"] for v in results.values() if v["status"] != "omitted"}
+    if not values:
+        return settings.S_DONE
     if "unknown" in values:
         return settings.S_CHECK
     if values <= {"ok", "already"}:
@@ -188,8 +192,9 @@ def run(
 
     label = ep.label
     need_photo = not ep.feed_id
-    need_reel = not ep.reel_id
-    logger.info(f"[fbpub] 대상 {label} (photo={'필요' if need_photo else '기존'}, reel={'필요' if need_reel else '기존'})")
+    need_reel = not ep.reel_id and not ep.reel_skip
+    reel_label = "생략" if ep.reel_skip and not ep.reel_id else ("필요" if need_reel else "기존")
+    logger.info(f"[fbpub] 대상 {label} (photo={'필요' if need_photo else '기존'}, reel={reel_label})")
 
     if not settings.DRY_RUN:
         try:
@@ -259,7 +264,10 @@ def _publish(st: _Run, need_photo: bool, need_reel: bool, now, sleep, clock) -> 
 
         # 5) 릴스
         if not need_reel:
-            st.results["reel"] = graph_client.result("already", "reel")
+            if ep.reel_skip and not ep.reel_id:
+                st.results["reel"] = graph_client.result("omitted", "reel", reason="reel_skip")
+            else:
+                st.results["reel"] = graph_client.result("already", "reel")
             return None
         photo_status = st.results["photo"]["status"]
         if photo_status not in ("ok", "already", "dry_run"):

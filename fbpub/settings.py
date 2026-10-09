@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import os
 
-VERSION = "1.1.0"
+VERSION = "1.3.0"
 
 
 def _env(name: str, default: str = "") -> str:
@@ -97,6 +97,7 @@ P_FEED_ID = "FB피드ID"
 P_REEL_ID = "FB릴스ID"
 P_PUBLISHED_AT = "발행일시"
 P_RESULT = "결과코드"
+P_REEL_SKIP = "릴스생략"  # v1.3.0: 체크 시 피드(이미지)만 게시
 
 REQUIRED_PROPERTIES = {
     P_TITLE: "title",
@@ -112,6 +113,7 @@ REQUIRED_PROPERTIES = {
     P_REEL_ID: "rich_text",
     P_PUBLISHED_AT: "date",
     P_RESULT: "rich_text",
+    P_REEL_SKIP: "checkbox",
 }
 
 # 게시상태 값
