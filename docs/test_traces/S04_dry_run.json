@@ -1,0 +1,80 @@
+{
+  "exit_code": 0,
+  "trace": [
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "and": [
+            {
+              "property": "게시상태",
+              "select": {
+                "equals": "승인"
+              }
+            },
+            {
+              "property": "검수완료",
+              "checkbox": {
+                "equals": true
+              }
+            }
+          ]
+        },
+        "sorts": [
+          {
+            "property": "일지번호",
+            "direction": "ascending"
+          }
+        ],
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/p04",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/p04?start_cursor=c2",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "https://files.invalid/feed",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/p05",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/p05?start_cursor=c2",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "https://files.invalid/reel",
+      "payload": null,
+      "status": null
+    }
+  ],
+  "final_rows": {
+    "page-1": {
+      "게시상태": "승인",
+      "FB피드ID": "",
+      "FB릴스ID": "",
+      "발행일시": null,
+      "결과코드": ""
+    }
+  }
+}

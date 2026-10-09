@@ -1,0 +1,70 @@
+{
+  "exit_code": 0,
+  "trace": [
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "and": [
+            {
+              "property": "게시상태",
+              "select": {
+                "equals": "승인"
+              }
+            },
+            {
+              "property": "검수완료",
+              "checkbox": {
+                "equals": true
+              }
+            }
+          ]
+        },
+        "sorts": [
+          {
+            "property": "일지번호",
+            "direction": "ascending"
+          }
+        ],
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "게시상태": {
+            "select": {
+              "name": "발행중"
+            }
+          }
+        }
+      },
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1",
+      "payload": null,
+      "status": null
+    }
+  ],
+  "final_rows": {
+    "page-1": {
+      "게시상태": "검수중",
+      "FB피드ID": "",
+      "FB릴스ID": "",
+      "발행일시": null,
+      "결과코드": ""
+    }
+  }
+}
