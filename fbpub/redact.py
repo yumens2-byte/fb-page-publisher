@@ -10,7 +10,7 @@ from typing import Any
 
 from fbpub import settings
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 MASK = "***"
 _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
@@ -19,6 +19,8 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"(?i)(authorization\"?\s*[:=]\s*\"?(?:oauth|bearer)\s+)[^\s\"']+"), rf"\1{MASK}"),
     (re.compile(r"\bEAA[A-Za-z0-9]{20,}"), f"EAA{MASK}"),
     (re.compile(r"\b(secret|ntn)_[A-Za-z0-9]{20,}"), rf"\1_{MASK}"),
+    # 노션 페이지·DB ID (UUID — 하이픈 유무 무관). Secret 값과 형식이 달라도 가린다 (v1.2.0)
+    (re.compile(r"\b[0-9a-fA-F]{8}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{4}-?[0-9a-fA-F]{12}\b"), MASK),
 )
 
 

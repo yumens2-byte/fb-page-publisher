@@ -181,3 +181,19 @@ def test_token_not_in_logs_after_traceback(live, monkeypatch, files, caplog):
     monkeypatch.setattr(graph_client, "post_photo", boom)
     assert _run(be, "R09_exception_redacted") == 2
     assert TOKEN not in caplog.text
+
+
+# v1.2.0 — 노션 오류 본문·UUID 가 로그에 남지 않음 (운영테스트 G4 로그에서 발견)
+def test_v120_notion_error_message_not_logged(live, monkeypatch, files, caplog):
+    from fbpub.redact import redact
+
+    def notion_404(method, url, **kw):
+        return _resp(404, {"object": "error", "code": "object_not_found",
+                           "message": "Could not find database with ID: 11111111-2222-3333-4444-555555555555. "
+                                      "Make sure ... shared with your integration \"Some-Integration\"."})
+
+    monkeypatch.setattr(requests, "request", notion_404)
+    assert run_publish.run(now=lambda: NOW) == 2
+    assert "11111111-2222" not in caplog.text and "Some-Integration" not in caplog.text
+    assert "http_404:object_not_found" in caplog.text
+    assert redact("id 11111111222233334444555555555555 / 11111111-2222-3333-4444-555555555555") == "id *** / ***"

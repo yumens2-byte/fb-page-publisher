@@ -17,6 +17,7 @@ v1.1.0 (2026-10-09 검토 반영)
   - M3 조회 페이지네이션 (find_ready, 릴스 일일 상한 집계) + 상한 집계 날짜 필터
   - M4 429·5xx·연결 오류 재시도 (최대 3회, Retry-After 준수) — 노션 호출은 전부 멱등(조회/동일값 갱신)
   - 발행중 잔류 행 조회 (find_stuck)
+v1.2.0 (2026-10-09 운영테스트 반영): 오류 메시지 본문(통합 이름·DB ID 포함) 미기록, 오류 코드만 남김
 """
 from __future__ import annotations
 
@@ -32,7 +33,7 @@ import requests
 from fbpub import settings
 from fbpub.redact import redact
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 logger = logging.getLogger(__name__)
 KST = ZoneInfo("Asia/Seoul")
@@ -104,12 +105,12 @@ def _request(method: str, path: str, json_body: dict | None = None) -> dict:
             continue
         break
     if resp.status_code != 200:
+        # 노션 오류 message 에는 DB ID·통합(integration) 이름이 들어 있어 공개 로그로 내보내지 않는다 (v1.2.0)
         try:
-            err = resp.json()
-            msg = f"{err.get('code', '')}:{str(err.get('message', ''))[:160]}"
+            code = str(resp.json().get("code", ""))
         except ValueError:
-            msg = (resp.text or "")[:160]
-        raise NotionError(f"{method} http_{resp.status_code}:{redact(msg)}")
+            code = ""
+        raise NotionError(f"{method} http_{resp.status_code}:{code or 'unknown'}")
     try:
         return resp.json()
     except ValueError:
