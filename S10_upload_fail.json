@@ -1,0 +1,255 @@
+{
+  "exit_code": 2,
+  "trace": [
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "property": "게시상태",
+          "select": {
+            "equals": "발행중"
+          }
+        },
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "and": [
+            {
+              "property": "게시상태",
+              "select": {
+                "equals": "승인"
+              }
+            },
+            {
+              "property": "검수완료",
+              "checkbox": {
+                "equals": true
+              }
+            }
+          ]
+        },
+        "sorts": [
+          {
+            "property": "일지번호",
+            "direction": "ascending"
+          }
+        ],
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "게시상태": {
+            "select": {
+              "name": "발행중"
+            }
+          }
+        }
+      },
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap04",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap04?start_cursor=c2",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "https://files.invalid/feed",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap05",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap05?start_cursor=c2",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "https://files.invalid/reel",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/1234567890123/photos",
+      "payload": {
+        "caption": "📓 수사일지 #900 — 관찰\n[D+9 / 화요일 오후 / 일반 회의실]\n\n테스트용 합성 문장이다. 기록은 짧게 남긴다.\n\n⚖️ 체크: ①우위 ? ②적정범위 ? ③고통 ?\n\n다음 일지: #901 — 수요일 오전, 복도\n💬 테스트 질문입니다?\n(실명·회사명은 적지 말아 주세요. 확인 시 숨김 처리됩니다.)\n\n※ 여러 사례를 재구성한 픽션입니다. 법률 자문이 아닙니다.\n#사건파일76 #수사일지 #직장내괴롭힘",
+        "access_token": "***",
+        "source": "<binary>"
+      },
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "FB피드ID": {
+            "rich_text": [
+              {
+                "type": "text",
+                "text": {
+                  "content": "1234567890123_ph1"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "and": [
+            {
+              "property": "FB릴스ID",
+              "rich_text": {
+                "is_not_empty": true
+              }
+            },
+            {
+              "property": "발행일시",
+              "date": {
+                "on_or_after": "2026-10-08"
+              }
+            }
+          ]
+        },
+        "page_size": 100
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/1234567890123/video_reels",
+      "payload": {
+        "upload_phase": "start",
+        "access_token": "***"
+      },
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "FB릴스ID": {
+            "rich_text": [
+              {
+                "type": "text",
+                "text": {
+                  "content": "vid1"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "https://rupload.facebook.com/video-upload/v25.0/vid1",
+      "payload": {
+        "headers": {
+          "Authorization": "OAuth ***",
+          "offset": "0",
+          "file_size": "6562"
+        },
+        "body": "<binary>"
+      },
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "FB릴스ID": {
+            "rich_text": []
+          }
+        }
+      },
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "게시상태": {
+            "select": {
+              "name": "부분완료"
+            }
+          },
+          "결과코드": {
+            "rich_text": [
+              {
+                "type": "text",
+                "text": {
+                  "content": "photo=ok; reel=failed/upload:media_error/code=6000"
+                }
+              }
+            ]
+          },
+          "발행일시": {
+            "date": {
+              "start": "2026-10-09T20:30:00+09:00"
+            }
+          }
+        }
+      },
+      "status": null
+    }
+  ],
+  "final_rows": {
+    "page-1": {
+      "게시상태": "부분완료",
+      "FB피드ID": "1234567890123_ph1",
+      "FB릴스ID": "",
+      "발행일시": "2026-10-09T20:30:00+09:00",
+      "결과코드": "photo=ok; reel=failed/upload:media_error/code=6000"
+    }
+  }
+}

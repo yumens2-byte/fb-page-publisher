@@ -1,0 +1,144 @@
+{
+  "exit_code": 2,
+  "trace": [
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "property": "게시상태",
+          "select": {
+            "equals": "발행중"
+          }
+        },
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "POST",
+      "url": "/databases/db000000000000000000000000000001/query",
+      "payload": {
+        "filter": {
+          "and": [
+            {
+              "property": "게시상태",
+              "select": {
+                "equals": "승인"
+              }
+            },
+            {
+              "property": "검수완료",
+              "checkbox": {
+                "equals": true
+              }
+            }
+          ]
+        },
+        "sorts": [
+          {
+            "property": "일지번호",
+            "direction": "ascending"
+          }
+        ],
+        "page_size": 20
+      },
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "게시상태": {
+            "select": {
+              "name": "발행중"
+            }
+          }
+        }
+      },
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap04",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap04?start_cursor=c2",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "https://files.invalid/feed",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap05",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "/pages/page-1/properties/%3Ap05?start_cursor=c2",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "GET",
+      "url": "https://files.invalid/reel",
+      "payload": null,
+      "status": null
+    },
+    {
+      "method": "PATCH",
+      "url": "/pages/page-1",
+      "payload": {
+        "properties": {
+          "게시상태": {
+            "select": {
+              "name": "실패"
+            }
+          },
+          "결과코드": {
+            "rich_text": [
+              {
+                "type": "text",
+                "text": {
+                  "content": "precheck:feed:relative_day_missing,image:aspect:1000x1000"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "status": null
+    }
+  ],
+  "final_rows": {
+    "page-1": {
+      "게시상태": "실패",
+      "FB피드ID": "",
+      "FB릴스ID": "",
+      "발행일시": null,
+      "결과코드": "precheck:feed:relative_day_missing,image:aspect:1000x1000"
+    }
+  }
+}
